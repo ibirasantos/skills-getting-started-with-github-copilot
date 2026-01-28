@@ -35,13 +35,67 @@ document.addEventListener("DOMContentLoaded", () => {
         participantsTitle.textContent = "Participants";
         participantsSection.appendChild(participantsTitle);
 
+
         const participantsList = document.createElement("ul");
         participantsList.className = "participants-list";
+        participantsList.style.listStyle = "none";
+        participantsList.style.paddingLeft = "0";
 
         if (details.participants && details.participants.length > 0) {
           details.participants.forEach((participant) => {
             const li = document.createElement("li");
-            li.textContent = participant; // or participant.name if available
+            li.style.display = "flex";
+            li.style.alignItems = "center";
+            li.style.marginBottom = "4px";
+
+            const span = document.createElement("span");
+            span.textContent = participant;
+            span.style.flex = "1";
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.innerHTML = "&#128465;"; // Trash can icon
+            deleteBtn.title = "Remove participant";
+            deleteBtn.className = "delete-participant-btn";
+            deleteBtn.style.marginLeft = "8px";
+            deleteBtn.style.background = "none";
+            deleteBtn.style.border = "none";
+            deleteBtn.style.cursor = "pointer";
+            deleteBtn.style.color = "#c00";
+            deleteBtn.style.fontSize = "1em";
+
+            deleteBtn.addEventListener("click", async (e) => {
+              e.preventDefault();
+              if (!confirm(`Remove ${participant} from ${name}?`)) return;
+              try {
+                const resp = await fetch(`/activities/${encodeURIComponent(name)}/participant/${encodeURIComponent(participant)}`, {
+                  method: "DELETE",
+                });
+                const result = await resp.json();
+                if (resp.ok) {
+                  messageDiv.textContent = result.message;
+                  messageDiv.className = "success";
+                  messageDiv.classList.remove("hidden");
+                  fetchActivities();
+                } else {
+                  messageDiv.textContent = result.detail || "Failed to remove participant.";
+                  messageDiv.className = "error";
+                  messageDiv.classList.remove("hidden");
+                }
+                setTimeout(() => {
+                  messageDiv.classList.add("hidden");
+                }, 5000);
+              } catch (err) {
+                messageDiv.textContent = "Error removing participant.";
+                messageDiv.className = "error";
+                messageDiv.classList.remove("hidden");
+                setTimeout(() => {
+                  messageDiv.classList.add("hidden");
+                }, 5000);
+              }
+            });
+
+            li.appendChild(span);
+            li.appendChild(deleteBtn);
             participantsList.appendChild(li);
           });
         } else {
@@ -89,6 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Refresh activities list after signup
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
